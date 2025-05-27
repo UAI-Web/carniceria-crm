@@ -30,5 +30,7 @@ namespace CarniceriaCRM.BE
 
         public int IntentosFallidos { get; set; } = 0;
 
+        public bool Bloqueado { get; set; }
+
     }
 }
