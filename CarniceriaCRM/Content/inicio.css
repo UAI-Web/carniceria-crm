@@ -1,0 +1,117 @@
+/* Reset básico */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ==============================
+   Header / Navegación
+   ============================== */
+.site-header {
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: fixed;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #FF5722;
+}
+
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+    .nav-menu a {
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+
+        .nav-menu a:hover {
+            color: #FF5722;
+        }
+
+/* Botón de login en la barra */
+.btn-nav {
+    padding: 8px 16px;
+    background-color: #FF5722;
+    color: #fff !important;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+    .btn-nav:hover {
+        background-color: #E64A19;
+        transform: scale(1.02);
+    }
+
+/* ==============================
+   Hero Section
+   ============================== */
+.hero {
+    /* Espacio para que no quede oculto debajo del header */
+    padding-top: 100px;
+    background: linear-gradient(135deg, #FFCCBC 0%, #FFE0B2 100%);
+    height: calc(100vh - 100px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.hero-content {
+    max-width: 600px;
+    margin: 0 20px;
+}
+
+    .hero-content h1 {
+        font-size: 2.5rem;
+        color: #333;
+        margin-bottom: 15px;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem;
+        color: #555;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    }
+
+/* Botón principal en hero */
+.btn-hero {
+    display: inline-block;
+    padding: 14px 28px;
+    background-color: #FF5722;
+    color: #fff !important;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+    .btn-hero:hover {
+        background-color: #E64A19;
+        transform: scale(1.05);
+    }
