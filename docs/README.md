@@ -6,6 +6,10 @@
 
 - [Casos de Uso Principal](casos-de-uso.md) - Funcionalidades por actor
 
+### 🏗️ Diagramas de Arquitectura
+
+- [Diagrama de Clases](diagrama-clases.md) - Arquitectura de clases BE y BLL
+
 ### 🔄 Diagramas de Secuencia
 
 - [Login y Autenticación](secuencia/login.md)
