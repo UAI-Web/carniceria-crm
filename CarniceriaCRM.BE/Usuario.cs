@@ -32,6 +32,8 @@ namespace CarniceriaCRM.BE
 
         public bool Bloqueado { get; set; }
 
+        public bool Activo { get; set; } = true;
+
         /// <summary>
         /// Lista de familias (roles) asignadas al usuario
         /// </summary>

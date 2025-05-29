@@ -164,7 +164,7 @@ namespace CarniceriaCRM
         /// </summary>
         /// <param name="registros">Lista de registros de bitácora</param>
         /// <returns>DataTable configurado</returns>
-        private DataTable CrearDataTable(IEnumerable<Bitacora> registros)
+        private DataTable CrearDataTable(IEnumerable<CarniceriaCRM.BE.Bitacora> registros)
         {
             var dt = new DataTable();
             dt.Columns.Add("Id", typeof(int));

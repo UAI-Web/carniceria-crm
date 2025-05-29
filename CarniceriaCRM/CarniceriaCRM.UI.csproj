@@ -133,6 +133,10 @@
       <Project>{99995fea-801d-4501-8518-4542d7ad11d2}</Project>
       <Name>CarniceriaCRM.BLL</Name>
     </ProjectReference>
+    <ProjectReference Include="..\CarniceriaCRM.DAL\CarniceriaCRM.DAL.csproj">
+      <Project>{b8a6a0aa-04d9-44ab-866f-a6489cac1956}</Project>
+      <Name>CarniceriaCRM.DAL</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

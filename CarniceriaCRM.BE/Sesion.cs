@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace CarniceriaCRM.BE
 {
@@ -17,6 +13,7 @@ namespace CarniceriaCRM.BE
                 return _usuario;
             }
         }
+
         public void Login(Usuario usu)
         {
             if (_usuario == null)
@@ -31,12 +28,16 @@ namespace CarniceriaCRM.BE
             {
                 _usuario = null;
             }
-
         }
+
         public bool EstaLogueado()
         {
             return _usuario != null;
         }
 
+        public void CerrarSesion()
+        {
+            Logout();
+        }
     }
-}
+} 

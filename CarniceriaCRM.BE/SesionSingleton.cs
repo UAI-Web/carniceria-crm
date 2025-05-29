@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace CarniceriaCRM.BE
 {
-    public class SesionSingleton
+    public class SesionSingleton : Sesion
     {
-        private static Sesion _instancia;
+        private static SesionSingleton _instancia;
         private static Object _lock = new Object();
-        public static Sesion Instancia
+        
+        public static SesionSingleton Instancia
         {
             get
             {
@@ -18,13 +15,11 @@ namespace CarniceriaCRM.BE
                 {
                     if (_instancia == null)
                     {
-                        _instancia = new Sesion();
+                        _instancia = new SesionSingleton();
                     }
-
                 }
                 return _instancia;
             }
         }
-
     }
-}
+} 

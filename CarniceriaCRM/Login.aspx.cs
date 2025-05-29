@@ -92,20 +92,48 @@ namespace CarniceriaCRM
                             "setTimeout(function(){ window.location.href='Dashboard.aspx'; }, 2000);", true);
                         break;
                     default:
-                        MostrarError("❌ Error inesperado al iniciar sesión. Intente nuevamente.");
+                        MostrarError($"❌ Error de login: {ex.resultado}. Intente nuevamente.");
                         break;
                 }
                 
                 // Limpiar contraseña por seguridad
                 tbPass.Text = "";
             }
+            catch (System.Data.SqlClient.SqlException sqlEx)
+            {
+                // Error específico de base de datos
+                MostrarError("❌ Error de conexión a la base de datos. Verifique que SQL Server esté ejecutándose.");
+                
+                // Log del error específico
+                System.Diagnostics.Debug.WriteLine($"Error SQL en Login: {sqlEx.Message}");
+            }
+            catch (System.Configuration.ConfigurationErrorsException configEx)
+            {
+                // Error de configuración
+                MostrarError("❌ Error de configuración del sistema. Verifique Web.config.");
+                
+                // Log del error específico
+                System.Diagnostics.Debug.WriteLine($"Error de configuración en Login: {configEx.Message}");
+            }
             catch (Exception ex)
             {
-                // Error no controlado
-                MostrarError("❌ Error del sistema. Por favor contacte al administrador.");
+                // Error no controlado - mostrar más información para debugging
+                MostrarError($"❌ Error del sistema: {ex.Message}");
                 
-                // Log del error (opcional, para debugging)
-                System.Diagnostics.Debug.WriteLine($"Error en Login: {ex.Message}");
+                // Log del error completo
+                System.Diagnostics.Debug.WriteLine($"Error completo en Login: {ex.ToString()}");
+                
+                // También escribir en el EventLog si es posible
+                try
+                {
+                    System.Diagnostics.EventLog.WriteEntry("CarniceriaCRM", 
+                        $"Error en Login - Usuario: {mail}, Error: {ex.ToString()}", 
+                        System.Diagnostics.EventLogEntryType.Error);
+                }
+                catch
+                {
+                    // Si no se puede escribir al EventLog, ignorar
+                }
                 
                 // Limpiar contraseña por seguridad
                 tbPass.Text = "";

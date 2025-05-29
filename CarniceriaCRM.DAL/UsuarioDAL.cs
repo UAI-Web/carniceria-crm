@@ -13,8 +13,8 @@ namespace CarniceriaCRM.DAL
 
         public UsuarioDAL()
         {
-            _connectionString = ConfigurationManager.ConnectionStrings["CarniceriaCRM"]?.ConnectionString 
-                ?? "Server=localhost;Database=CarniceriaCRM;Integrated Security=true;";
+            _connectionString = ConfigurationManager.ConnectionStrings["CarniceriaCRM"]?.ConnectionString
+                ?? "Server=.\\SQLEXPRESS;Database=CarniceriaCRM;Integrated Security=true;";
         }
 
         /// <summary>
@@ -239,9 +239,6 @@ namespace CarniceriaCRM.DAL
             }
         }
 
-        /// <summary>
-        /// Mapea un SqlDataReader a un objeto Usuario
-        /// </summary>
         private Usuario MapearUsuario(SqlDataReader reader)
         {
             return new Usuario
@@ -256,9 +253,6 @@ namespace CarniceriaCRM.DAL
             };
         }
 
-        /// <summary>
-        /// Agrega los parámetros comunes para operaciones de Usuario
-        /// </summary>
         private void AgregarParametrosUsuario(SqlCommand command, Usuario usuario)
         {
             command.Parameters.AddWithValue("@Nombre", usuario.Nombre ?? (object)DBNull.Value);
@@ -267,7 +261,12 @@ namespace CarniceriaCRM.DAL
             command.Parameters.AddWithValue("@Clave", usuario.Clave ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("@IntentosFallidos", usuario.IntentosFallidos);
             command.Parameters.AddWithValue("@Bloqueado", usuario.Bloqueado);
-            command.Parameters.AddWithValue("@Activo", true); // Por defecto los usuarios se crean activos
+            command.Parameters.AddWithValue("@Activo", true);
+        }
+
+        public List<Usuario> ObtenerTodos()
+        {
+            return Listar();
         }
     }
 }

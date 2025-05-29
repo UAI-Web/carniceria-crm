@@ -42,9 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitacoraService.cs" />
     <Compile Include="Encriptador.cs" />
-    <Compile Include="Sesion.cs" />
-    <Compile Include="SesionSingleton.cs" />
     <Compile Include="UsuarioService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

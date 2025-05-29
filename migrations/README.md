@@ -127,7 +127,17 @@ Todos los usuarios tienen la contraseña: **`admin123`**
 
 ## 🔧 Configuración de Conexión
 
-### Cadena de Conexión Recomendada
+### Cadena de Conexión Recomendada (SQL Server Express)
+
+```xml
+<connectionStrings>
+  <add name="CarniceriaCRM"
+       connectionString="Server=.\SQLEXPRESS;Database=CarniceriaCRM;Integrated Security=true;"
+       providerName="System.Data.SqlClient" />
+</connectionStrings>
+```
+
+### Para SQL Server Completo
 
 ```xml
 <connectionStrings>

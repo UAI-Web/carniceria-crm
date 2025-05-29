@@ -29,7 +29,7 @@ namespace CarniceriaCRM.BLL
 
             if (SesionSingleton.Instancia.EstaLogueado()) //Si ya esta logueado no avanza
             {
-                _bitacoraDAL.RegistrarLoginFallido(mail, "Sesión ya iniciada", direccionIP, userAgent);
+                RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Sesión ya iniciada", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.SesionYaIniciada);
             }
 
@@ -37,13 +37,13 @@ namespace CarniceriaCRM.BLL
             
             if(usu == null)
             {
-                _bitacoraDAL.RegistrarLoginFallido(mail, "Mail inválido", direccionIP, userAgent);
+                RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Mail inválido", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.MailInvalido); //No existe el usuario con ese mail
             }
             
             if(usu.Bloqueado == true)
             {
-                _bitacoraDAL.RegistrarLoginFallido(mail, "Usuario bloqueado", direccionIP, userAgent);
+                RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Usuario bloqueado", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.UsuarioBloqueado); //Si esta bloqueado no avanza
             }
             
@@ -54,14 +54,14 @@ namespace CarniceriaCRM.BLL
                     usu.Bloqueado = true;
                     _usuarioDAL.Modificar(usu); 
                     _usuarioDAL.ResetearIntentos(usu);
-                    _bitacoraDAL.RegistrarBloqueoUsuario(usu, direccionIP, userAgent);
+                    RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarBloqueoUsuario(usu, direccionIP, userAgent));
                 }
                 else
                 {
                     _usuarioDAL.IncrementarIntento(usu);
                 }
                 
-                _bitacoraDAL.RegistrarLoginFallido(mail, "Contraseña inválida", direccionIP, userAgent);
+                RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Contraseña inválida", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.ContraseñaInvalida);
             }
             else
@@ -75,7 +75,7 @@ namespace CarniceriaCRM.BLL
                 SesionSingleton.Instancia.Login(usu); //Si todo sale bien hace login
                 
                 // Registrar login exitoso en bitácora
-                _bitacoraDAL.RegistrarLogin(usu, direccionIP, userAgent);
+                RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLogin(usu, direccionIP, userAgent));
                 
                 return ResultadoLogin.UsuarioValido;
             }
@@ -96,7 +96,7 @@ namespace CarniceriaCRM.BLL
             Usuario usuario = SesionSingleton.Instancia.Usuario;
             
             // Registrar logout en bitácora
-            _bitacoraDAL.RegistrarLogout(usuario, direccionIP, userAgent);
+            RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLogout(usuario, direccionIP, userAgent));
             
             SesionSingleton.Instancia.Logout();
         }
@@ -177,9 +177,9 @@ namespace CarniceriaCRM.BLL
             // Registrar el cambio en bitácora
             string direccionIP = ObtenerDireccionIP();
             string userAgent = ObtenerUserAgent();
-            _bitacoraDAL.RegistrarEvento(usuarioId, "CAMBIO_PASSWORD", 
+            RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarEvento(usuarioId, "CAMBIO_PASSWORD", 
                 $"Usuario {usuario.Nombre} {usuario.Apellido} cambió su contraseña", 
-                direccionIP, userAgent);
+                direccionIP, userAgent));
         }
 
         /// <summary>
@@ -197,9 +197,9 @@ namespace CarniceriaCRM.BLL
                 // Registrar en bitácora
                 string direccionIP = ObtenerDireccionIP();
                 string userAgent = ObtenerUserAgent();
-                _bitacoraDAL.RegistrarEvento(usuarioId, "USUARIO_DESBLOQUEADO", 
+                RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarEvento(usuarioId, "USUARIO_DESBLOQUEADO", 
                     $"Usuario {usuario.Nombre} {usuario.Apellido} fue desbloqueado manualmente", 
-                    direccionIP, userAgent);
+                    direccionIP, userAgent));
             }
         }
 
@@ -244,6 +244,39 @@ namespace CarniceriaCRM.BLL
                 // Si hay error obteniendo User Agent, devolver vacío
             }
             return null;
+        }
+
+        public List<Usuario> ObtenerTodos()
+        {
+            return _usuarioDAL.ObtenerTodos();
+        }
+
+        /// <summary>
+        /// Registra en bitácora de forma segura, sin permitir que errores de bitácora afecten el flujo principal
+        /// </summary>
+        private void RegistrarBitacoraSafe(Action accionBitacora)
+        {
+            try
+            {
+                accionBitacora.Invoke();
+            }
+            catch (Exception ex)
+            {
+                // Log del error de bitácora sin afectar el flujo principal
+                System.Diagnostics.Debug.WriteLine($"Error en bitácora (no crítico): {ex.Message}");
+                
+                // Opcional: escribir en EventLog si es posible
+                try
+                {
+                    System.Diagnostics.EventLog.WriteEntry("CarniceriaCRM", 
+                        $"Error en bitácora: {ex.Message}", 
+                        System.Diagnostics.EventLogEntryType.Warning);
+                }
+                catch
+                {
+                    // Si no se puede escribir al EventLog, ignorar
+                }
+            }
         }
     }
 }
