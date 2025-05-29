@@ -205,16 +205,27 @@ namespace CarniceriaCRM
         {
             try
             {
-                if (sesion != null)
-                {
-                    sesion.CerrarSesion();
-                }
+                // Usar el servicio para logout (registra en bitácora)
+                var usuarioService = new UsuarioService();
+                usuarioService.Logout();
+                
                 Session.Clear();
                 Session.Abandon();
                 Response.Redirect("~/Login.aspx", false);
             }
-            catch
+            catch (ExcepcionLogin ex)
             {
+                // Si no hay sesión activa, simplemente redirigir
+                System.Diagnostics.Debug.WriteLine($"Excepción logout: {ex.Message}");
+                Session.Clear();
+                Session.Abandon();
+                Response.Redirect("~/Login.aspx", false);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error cerrando sesión: {ex.Message}");
+                Session.Clear();
+                Session.Abandon();
                 Response.Redirect("~/Login.aspx", false);
             }
         }

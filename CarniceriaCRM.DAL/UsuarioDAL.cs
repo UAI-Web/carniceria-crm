@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Configuration;
 using CarniceriaCRM.BE;
+using System.Linq;
 
 namespace CarniceriaCRM.DAL
 {
@@ -50,7 +51,7 @@ namespace CarniceriaCRM.DAL
         }
 
         /// <summary>
-        /// Obtiene un usuario por su email
+        /// Obtiene un usuario por su email con sus roles y permisos
         /// </summary>
         public Usuario ObtenerPorMail(string mail)
         {
@@ -77,6 +78,12 @@ namespace CarniceriaCRM.DAL
                         }
                     }
                 }
+            }
+            
+            // Cargar roles y permisos si el usuario existe
+            if (usuario != null)
+            {
+                CargarFamiliasYPermisos(usuario);
             }
             
             return usuario;
@@ -267,6 +274,97 @@ namespace CarniceriaCRM.DAL
         public List<Usuario> ObtenerTodos()
         {
             return Listar();
+        }
+
+        /// <summary>
+        /// Carga las familias (roles) y patentes (permisos) del usuario
+        /// </summary>
+        private void CargarFamiliasYPermisos(Usuario usuario)
+        {
+            if (usuario == null) return;
+            
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                // Query para obtener familias del usuario con sus patentes
+                string query = @"
+                    SELECT DISTINCT 
+                        f.Id as FamiliaId,
+                        f.Nombre as FamiliaNombre,
+                        f.Descripcion as FamiliaDescripcion,
+                        f.Activo as FamiliaActivo,
+                        f.FechaCreacion as FamiliaFechaCreacion,
+                        p.Id as PatenteId,
+                        p.Nombre as PatenteNombre,
+                        p.Descripcion as PatenteDescripcion,
+                        p.Permiso as PatentePermiso,
+                        p.Activo as PatenteActivo,
+                        p.FechaCreacion as PatenteFechaCreacion
+                    FROM Usuarios u
+                    INNER JOIN UsuarioFamilia uf ON u.Id = uf.UsuarioId
+                    INNER JOIN Familias f ON uf.FamiliaId = f.Id
+                    LEFT JOIN FamiliaPatente fp ON f.Id = fp.FamiliaId
+                    LEFT JOIN Patentes p ON fp.PatenteId = p.Id
+                    WHERE u.Id = @UsuarioId 
+                        AND u.Activo = 1 
+                        AND uf.Activo = 1 
+                        AND f.Activo = 1
+                        AND (p.Id IS NULL OR p.Activo = 1)
+                    ORDER BY f.Nombre, p.Nombre";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@UsuarioId", usuario.Id);
+                    
+                    connection.Open();
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        var familiasDict = new Dictionary<int, Familia>();
+                        
+                        while (reader.Read())
+                        {
+                            int familiaId = Convert.ToInt32(reader["FamiliaId"]);
+                            
+                            // Crear familia si no existe en el diccionario
+                            if (!familiasDict.ContainsKey(familiaId))
+                            {
+                                var familia = new Familia
+                                {
+                                    Id = familiaId,
+                                    Nombre = reader["FamiliaNombre"].ToString(),
+                                    Descripcion = reader["FamiliaDescripcion"].ToString(),
+                                    Activo = Convert.ToBoolean(reader["FamiliaActivo"]),
+                                    FechaCreacion = Convert.ToDateTime(reader["FamiliaFechaCreacion"])
+                                };
+                                
+                                familiasDict[familiaId] = familia;
+                            }
+                            
+                            // Agregar patente si existe (puede haber familias sin patentes)
+                            if (!reader.IsDBNull(reader.GetOrdinal("PatenteId")))
+                            {
+                                var patente = new Patente
+                                {
+                                    Id = Convert.ToInt32(reader["PatenteId"]),
+                                    Nombre = reader["PatenteNombre"].ToString(),
+                                    Descripcion = reader["PatenteDescripcion"].ToString(),
+                                    Permiso = reader["PatentePermiso"].ToString(),
+                                    Activo = Convert.ToBoolean(reader["PatenteActivo"]),
+                                    FechaCreacion = Convert.ToDateTime(reader["PatenteFechaCreacion"])
+                                };
+                                
+                                // Verificar que la patente no esté duplicada
+                                if (!familiasDict[familiaId].Patentes.Any(p => p.Id == patente.Id))
+                                {
+                                    familiasDict[familiaId].Patentes.Add(patente);
+                                }
+                            }
+                        }
+                        
+                        // Asignar familias al usuario
+                        usuario.Familias = familiasDict.Values.ToList();
+                    }
+                }
+            }
         }
     }
 }

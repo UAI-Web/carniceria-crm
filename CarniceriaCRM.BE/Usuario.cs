@@ -42,17 +42,10 @@ namespace CarniceriaCRM.BE
         /// <summary>
         /// Verifica si el usuario tiene un permiso específico
         /// </summary>
-        public bool TienePermiso(PermisosEnum permiso)
+        public bool TienePermiso(string permiso)
         {
-            foreach (var familia in Familias)
-            {
-                var permisos = familia.ObtenerTodosLosPermisos();
-                if (permisos.Any(p => p.Permiso == permiso.ToString()))
-                {
-                    return true;
-                }
-            }
-            return false;
+            if (Familias == null) return false;
+            return Familias.Exists(f => f.Patentes.Exists(p => p.Permiso.Equals(permiso, StringComparison.OrdinalIgnoreCase) && p.Activo));
         }
 
         /// <summary>
@@ -63,7 +56,7 @@ namespace CarniceriaCRM.BE
             var todosLosPermisos = new List<Patente>();
             foreach (var familia in Familias)
             {
-                todosLosPermisos.AddRange(familia.ObtenerTodosLosPermisos());
+                todosLosPermisos.AddRange(familia.Patentes.Where(p => p.Activo));
             }
             return todosLosPermisos.Distinct().ToList();
         }
@@ -73,7 +66,7 @@ namespace CarniceriaCRM.BE
         /// </summary>
         public bool TieneRol(string nombreRol)
         {
-            return Familias.Any(f => f.Nombre.Equals(nombreRol, StringComparison.OrdinalIgnoreCase));
+            return Familias.Exists(f => f.Nombre.Equals(nombreRol, StringComparison.OrdinalIgnoreCase) && f.Activo);
         }
 
         /// <summary>
@@ -81,7 +74,15 @@ namespace CarniceriaCRM.BE
         /// </summary>
         public List<string> ObtenerRoles()
         {
-            return Familias.Select(f => f.Nombre).ToList();
+            return Familias.Where(f => f.Activo).Select(f => f.Nombre).ToList();
         }
+
+        /// <summary>
+        /// Obtiene una representación amigable del usuario
+        /// </summary>
+        public string NombreCompleto => $"{Nombre} {Apellido}".Trim();
+
+        public DateTime FechaCreacion { get; set; }
+        public DateTime FechaUltimaModificacion { get; set; }
     }
 }

@@ -176,11 +176,9 @@ namespace CarniceriaCRM
         {
             try
             {
-                // Limpiar la sesión
-                if (sesion != null)
-                {
-                    sesion.CerrarSesion();
-                }
+                // Usar el servicio para logout (registra en bitácora)
+                var usuarioService = new UsuarioService();
+                usuarioService.Logout();
                 
                 // Limpiar session del ASP.NET también
                 Session.Clear();
@@ -189,10 +187,20 @@ namespace CarniceriaCRM
                 // Redirigir al login
                 Response.Redirect("~/Login.aspx", false);
             }
+            catch (ExcepcionLogin ex)
+            {
+                // Si no hay sesión activa, simplemente redirigir
+                System.Diagnostics.Debug.WriteLine($"Excepción logout: {ex.Message}");
+                Session.Clear();
+                Session.Abandon();
+                Response.Redirect("~/Login.aspx", false);
+            }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error cerrando sesión: {ex.Message}");
                 // Forzar redirección al login
+                Session.Clear();
+                Session.Abandon();
                 Response.Redirect("~/Login.aspx", false);
             }
         }
