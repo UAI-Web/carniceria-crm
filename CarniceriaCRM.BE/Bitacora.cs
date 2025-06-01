@@ -2,7 +2,7 @@ using System;
 
 namespace CarniceriaCRM.BE
 {
-    public class Bitacora : DigitVerifierBase
+    public class Bitacora
     {
         public int Id { get; set; }
         public string Descripcion { get; set; }

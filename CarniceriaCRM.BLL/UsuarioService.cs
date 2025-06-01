@@ -50,18 +50,23 @@ namespace CarniceriaCRM.BLL
             
             if (!Encriptador.Encriptar(password).Equals(usu.Clave)) //Hasheo la clave ingresada y la comparo con la de la BD
             {
-                if(usu.IntentosFallidos == 2) //Al tercer intento fallido le bloqueo la cuenta
+                if (usu.IntentosFallidos == 2) //Al tercer intento fallido le bloqueo la cuenta
                 {
                     usu.Bloqueado = true;
                     _usuarioDAL.Modificar(usu); 
                     _usuarioDAL.ResetearIntentos(usu);
+
+                    RecalcularSingleDV(usu.Id);
+
                     RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarBloqueoUsuario(usu, direccionIP, userAgent));
                 }
                 else
                 {
                     _usuarioDAL.IncrementarIntento(usu);
+
+                    RecalcularSingleDV(usu.Id);
                 }
-                
+
                 RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Contraseña inválida", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.ContraseñaInvalida);
             }
@@ -71,8 +76,10 @@ namespace CarniceriaCRM.BLL
                 if (usu.IntentosFallidos > 0)
                 {
                     _usuarioDAL.ResetearIntentos(usu);
+
+                    RecalcularSingleDV(usu.Id);
                 }
-                
+
                 SesionSingleton.Instancia.Login(usu); //Si todo sale bien hace login
                 
                 // Registrar login exitoso en bitácora
@@ -288,30 +295,30 @@ namespace CarniceriaCRM.BLL
         {
             IntegrityResult result = new IntegrityResult();
 
-            IDigitVerifier<Usuario> usuarioVerifier = new DigitVerifier<Usuario>();
+            IDigitVerifier<Usuario> verifier = new DigitVerifier<Usuario>();
 
             var todos = _usuarioDAL.ObtenerTodos();
 
             // Verificar DVH fila por fila
-            foreach (var e in todos)
+            foreach (var item in todos)
             {
-                var expected = usuarioVerifier.ComputeDVH(e);
+                string expectedDVH = verifier.ComputeDVH(item);
 
-                if (e.DigitoVerificadorH != expected)
+                if (item.DigitoVerificadorH != expectedDVH)
                 {
-                    result.DHErrors.Add(new IntegrityError($"DVH corrupto en {UsuarioDAL.TableName} [{e.Id}]: se esperaba '{expected}', se encontró {((!string.IsNullOrEmpty(e.DigitoVerificadorH)) ? "'" + e.DigitoVerificadorH + "'" : "vacío")}."));
+                    result.DHErrors.Add(new IntegrityError($"DVH corrupto en {UsuarioDAL.TableName} [{item.Id}]: se esperaba '{expectedDVH}', se encontró {((!string.IsNullOrEmpty(item.DigitoVerificadorH)) ? "'" + item.DigitoVerificadorH + "'" : "vacío")}."));
                     result.Result = false;
                 }
             }
 
             // Verificar DVV global
             DigitoVerificadorVDAL dvvDAL = new DigitoVerificadorVDAL();
-            var storedDvv = dvvDAL.ObtenerDVV(UsuarioDAL.TableName);
-            var expectedDvv = usuarioVerifier.ComputeDVV(todos);
+            string storedDVV = dvvDAL.ObtenerDVV(UsuarioDAL.TableName);
+            string expectedDVV = verifier.ComputeDVV(todos);
 
-            if (storedDvv != expectedDvv)
+            if (storedDVV != expectedDVV)
             {
-                result.DVErrors.Add(new IntegrityError($"DVV corrupto en {UsuarioDAL.TableName}: se esperaba '{expectedDvv}', se encontró {((!string.IsNullOrEmpty(storedDvv)) ? "'" + storedDvv + "'" : "vacío")}."));
+                result.DVErrors.Add(new IntegrityError($"DVV corrupto en {UsuarioDAL.TableName}: se esperaba '{expectedDVV}', se encontró {((!string.IsNullOrEmpty(storedDVV)) ? "'" + storedDVV + "'" : "vacío")}."));
                 result.Result = false;
             }
 
@@ -320,19 +327,38 @@ namespace CarniceriaCRM.BLL
 
         public override void RecalcularDV()
         {
-            IDigitVerifier<Usuario> usuarioVerifier = new DigitVerifier<Usuario>();
+            IDigitVerifier<Usuario> verifier = new DigitVerifier<Usuario>();
 
             var todos = _usuarioDAL.ObtenerTodos();
 
-            foreach (var usuario in todos)
+            foreach (var item in todos)
             {
-                string dvH = usuarioVerifier.ComputeDVH(usuario);
+                string dvH = verifier.ComputeDVH(item);
 
-                if (usuario.DigitoVerificadorH != dvH)
-                    _usuarioDAL.ActualizarDVH(usuario.Id, dvH);
+                if (item.DigitoVerificadorH != dvH)
+                    _usuarioDAL.ActualizarDVH(item.Id, dvH);
             }
 
-            string dvV = usuarioVerifier.ComputeDVV(todos);
+            string dvV = verifier.ComputeDVV(todos);
+
+            DigitoVerificadorVDAL dvvDAL = new DigitoVerificadorVDAL();
+            dvvDAL.ActualizarDVV(UsuarioDAL.TableName, dvV);
+        }
+
+        public override void RecalcularSingleDV(int id)
+        {
+            IDigitVerifier<Usuario> verifier = new DigitVerifier<Usuario>();
+
+            Usuario item = _usuarioDAL.ObtenerPorId(id);
+
+            string dvH = verifier.ComputeDVH(item);
+
+            if (item.DigitoVerificadorH != dvH)
+                _usuarioDAL.ActualizarDVH(item.Id, dvH);
+
+            var todos = _usuarioDAL.ObtenerTodos();
+
+            string dvV = verifier.ComputeDVV(todos);
 
             DigitoVerificadorVDAL dvvDAL = new DigitoVerificadorVDAL();
             dvvDAL.ActualizarDVV(UsuarioDAL.TableName, dvV);

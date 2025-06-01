@@ -20,6 +20,11 @@ namespace CarniceriaCRM.BLL
         public DigitVerifierManager()
         {
             integrityTables.Add(new IntegrityTable(UsuarioDAL.TableName, new UsuarioService()));
+            integrityTables.Add(new IntegrityTable(CategoriaDAL.TableName, new CategoriaService()));
+            integrityTables.Add(new IntegrityTable(ClienteDAL.TableName, new ClienteService()));
+            integrityTables.Add(new IntegrityTable(ProveedorDAL.TableName, new ProveedorService()));
+            integrityTables.Add(new IntegrityTable(ProductoDAL.TableName, new ProductoService()));
+
         }
 
         public IntegrityResume VerifyIntegrity()

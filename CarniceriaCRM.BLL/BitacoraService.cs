@@ -1,8 +1,9 @@
+using CarniceriaCRM.BE;
+using CarniceriaCRM.BLL.DigitVerifier;
+using CarniceriaCRM.DAL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CarniceriaCRM.BE;
-using CarniceriaCRM.DAL;
 
 namespace CarniceriaCRM.BLL
 {

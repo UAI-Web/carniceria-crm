@@ -4,3 +4,12 @@ NT Service\MSSQLSERVER
 
 control total? dale que va
 
+modificar el web.config
+
+agregar y/o revisar ruta de almacenamiento:
+
+	<appSettings>
+		<add key="ArchivoBackup" value="C:\Users\Santiago\Documents\UAI\CURSANDO\T1-23-36 DESARROLLO Y ARQUITECTURAS WEB\carniceria-crm\backup.bkp" />
+	</appSettings>
+
+

@@ -142,7 +142,9 @@ namespace CarniceriaCRM.DAL
                     AgregarParametrosUsuario(command, usuario);
                     
                     connection.Open();
+
                     object result = command.ExecuteScalar();
+
                     if (result != null)
                     {
                         usuario.Id = Convert.ToInt32(result);
@@ -247,26 +249,6 @@ namespace CarniceriaCRM.DAL
                 {
                     command.Parameters.AddWithValue("@Id", usuario.Id);
                     
-                    connection.Open();
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public void ActualizarDVH(int id, string digitoVerificador)
-        {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                string query = @"
-                    UPDATE Usuarios 
-                    SET DigitoVerificadorH = @DigitoVerificadorH
-                    WHERE Id = @Id";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Id", id);
-                    command.Parameters.AddWithValue("@DigitoVerificadorH", digitoVerificador);
-
                     connection.Open();
                     command.ExecuteNonQuery();
                 }
@@ -391,6 +373,26 @@ namespace CarniceriaCRM.DAL
                         // Asignar familias al usuario
                         usuario.Familias = familiasDict.Values.ToList();
                     }
+                }
+            }
+        }
+
+        public void ActualizarDVH(int id, string digitoVerificador)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = $@"
+                    UPDATE {TableName}
+                    SET DigitoVerificadorH = @DigitoVerificadorH
+                    WHERE Id = @Id";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@DigitoVerificadorH", digitoVerificador);
+
+                    connection.Open();
+                    command.ExecuteNonQuery();
                 }
             }
         }

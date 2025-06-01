@@ -6,9 +6,5 @@ create table dbo.DigitoVerificadorV
 );
 
 alter table dbo.Usuarios
-add
-DigitoVerificadorH varchar(2);
+add DigitoVerificadorH varchar(2);
 
-alter table dbo.Bitacora
-add
-DigitoVerificadorH varchar(2);

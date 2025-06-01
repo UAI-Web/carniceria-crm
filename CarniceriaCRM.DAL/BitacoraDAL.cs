@@ -26,7 +26,8 @@ namespace CarniceriaCRM.DAL
                 string query = @"
                     SELECT b.Id, b.Descripcion, b.Accion, b.UsuarioId, b.FechaHora, 
                            b.DireccionIP, b.UserAgent,
-                           u.Nombre, u.Apellido, u.Mail
+                           u.Nombre, u.Apellido, u.Mail,
+                            b.DigitoVerificadorH
                     FROM Bitacora b
                     LEFT JOIN Usuarios u ON b.UsuarioId = u.Id
                     ORDER BY b.FechaHora DESC";
@@ -56,7 +57,8 @@ namespace CarniceriaCRM.DAL
                 string query = @"
                     SELECT b.Id, b.Descripcion, b.Accion, b.UsuarioId, b.FechaHora, 
                            b.DireccionIP, b.UserAgent,
-                           u.Nombre, u.Apellido, u.Mail
+                           u.Nombre, u.Apellido, u.Mail,
+                            b.DigitoVerificadorH
                     FROM Bitacora b
                     LEFT JOIN Usuarios u ON b.UsuarioId = u.Id
                     WHERE b.Id = @Id";
@@ -85,7 +87,8 @@ namespace CarniceriaCRM.DAL
             {
                 string query = @"
                     INSERT INTO Bitacora (Descripcion, Accion, UsuarioId, FechaHora, DireccionIP, UserAgent)
-                    VALUES (@Descripcion, @Accion, @UsuarioId, @FechaHora, @DireccionIP, @UserAgent)";
+                    VALUES (@Descripcion, @Accion, @UsuarioId, @FechaHora, @DireccionIP, @UserAgent);
+                    SELECT SCOPE_IDENTITY();";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
@@ -97,7 +100,13 @@ namespace CarniceriaCRM.DAL
                     command.Parameters.AddWithValue("@UserAgent", bitacora.UserAgent ?? (object)DBNull.Value);
                     
                     connection.Open();
-                    command.ExecuteNonQuery();
+
+                    object result = command.ExecuteScalar();
+
+                    if (result != null)
+                    {
+                        bitacora.Id = Convert.ToInt32(result);
+                    }
                 }
             }
         }
@@ -113,6 +122,7 @@ namespace CarniceriaCRM.DAL
                 DireccionIP = direccionIP,
                 UserAgent = userAgent
             };
+
             Registrar(bitacora);
         }
 
@@ -200,4 +210,4 @@ namespace CarniceriaCRM.DAL
             return bitacora;
         }
     }
-} 
+}

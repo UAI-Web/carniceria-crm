@@ -12,5 +12,7 @@ namespace CarniceriaCRM.BLL.DigitVerifier
         public abstract IntegrityResult VerifyIntegrity();
 
         public abstract void RecalcularDV();
+
+        public abstract void RecalcularSingleDV(int id);
     }
 }

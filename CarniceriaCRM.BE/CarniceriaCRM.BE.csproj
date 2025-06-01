@@ -42,12 +42,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bitacora.cs" />
+    <Compile Include="Categoria.cs" />
+    <Compile Include="Cliente.cs" />
     <Compile Include="Componente.cs" />
     <Compile Include="DigitVerifierBase.cs" />
     <Compile Include="ExcepcionLogin.cs" />
     <Compile Include="Familia.cs" />
     <Compile Include="Patente.cs" />
     <Compile Include="PermisosEnum.cs" />
+    <Compile Include="Producto.cs" />
+    <Compile Include="Proveedor.cs" />
     <Compile Include="ResultadoLogin.cs" />
     <Compile Include="Sesion.cs" />
     <Compile Include="SesionSingleton.cs" />
