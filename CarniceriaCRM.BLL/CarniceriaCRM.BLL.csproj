@@ -42,8 +42,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseDatosService.cs" />
     <Compile Include="BitacoraService.cs" />
+    <Compile Include="DigitVerifier\DigitVerifierType.cs" />
+    <Compile Include="DigitVerifier\IDigitVerifier.cs" />
+    <Compile Include="DigitVerifier\IntegrityError.cs" />
+    <Compile Include="DigitVerifier\IntegrityResult.cs" />
+    <Compile Include="DigitVerifier\IntegrityResume.cs" />
+    <Compile Include="DigitVerifier\IntegrityTable.cs" />
     <Compile Include="Encriptador.cs" />
+    <Compile Include="DigitVerifierManager.cs" />
+    <Compile Include="DigitVerifier\DigitVerifierService.cs" />
     <Compile Include="UsuarioService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

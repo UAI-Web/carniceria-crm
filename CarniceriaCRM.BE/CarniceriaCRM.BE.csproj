@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="Bitacora.cs" />
     <Compile Include="Componente.cs" />
+    <Compile Include="DigitVerifierBase.cs" />
     <Compile Include="ExcepcionLogin.cs" />
     <Compile Include="Familia.cs" />
     <Compile Include="Patente.cs" />

@@ -6,6 +6,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using CarniceriaCRM.BLL;
 using CarniceriaCRM.BE;
+using CarniceriaCRM.BLL.DigitVerifier;
 
 namespace CarniceriaCRM
 {
@@ -26,8 +27,14 @@ namespace CarniceriaCRM
             if (!Page.IsPostBack)
             {
                 CargarInformacionUsuario();
-                ConfigurarVisibilidadPorRol();
-                CargarEstadisticas();
+
+                //revisar si hay algun problema en la bd y el digito verificador
+
+                if (ChequearIntegridad())
+                {
+                    ConfigurarVisibilidadPorRol();
+                    CargarEstadisticas();
+                }
             }
         }
 
@@ -170,6 +177,52 @@ namespace CarniceriaCRM
             }
         }
 
+        private bool ChequearIntegridad()
+        {
+            // Determinar permisos basados en roles
+            bool esWebMaster = usuarioActual.Familias.Any(f => f.Nombre == "WebMaster");
+
+            var bdService = new BaseDatosService();
+
+            panRestore.Visible = esWebMaster && bdService.RestoreAvailable();
+
+            //si el estado de la BD es correcto entonces no mostrar el boton de calculo de inconsistencia
+
+            var digitVerifierManager = new DigitVerifierManager();
+
+            IntegrityResume integrityResume = digitVerifierManager.VerifyIntegrity();
+
+            //ademas necesito saber el resultado de las tablas modificadas y las columnas modificadas
+
+            if (!integrityResume.Result)
+            {
+                if (integrityResume.DVHErrors.Count != 0)
+                {
+                    phDVHErrors.Visible = true;
+
+                    blDVHError.DataTextField = "Message";
+                    blDVHError.DataSource = integrityResume.DVHErrors;
+                    blDVHError.DataBind();
+                }
+
+                if (integrityResume.DVVErrors.Count != 0)
+                {
+                    phDVVErrors.Visible = true;
+
+                    blDVVError.DataTextField = "Message";
+                    blDVVError.DataSource = integrityResume.DVVErrors;
+                    blDVVError.DataBind();
+                }
+            }
+
+            phDVErrors.Visible = esWebMaster && !integrityResume.Result;
+
+            panBackup.Visible = esWebMaster && integrityResume.Result;
+            panCalculateVD.Visible = esWebMaster && !integrityResume.Result;
+
+            return integrityResume.Result;
+        }
+
         #region Event Handlers para navegación
 
         protected void btnCerrarSesion_Click(object sender, EventArgs e)
@@ -251,6 +304,95 @@ namespace CarniceriaCRM
         {
             // TODO: Redirigir a página de configuración
             Response.Redirect("~/Configuracion.aspx", false);
+        }
+
+        protected void btnBackupDB_Click(object sender, EventArgs e)
+        {
+            bool esWebMaster = usuarioActual.Familias.Any(f => f.Nombre == "WebMaster");
+
+            if (!esWebMaster)
+            {
+                ClientScript.RegisterStartupScript(this.GetType(), "error",
+                    "alert('Usted no posee los permisos necesarios para realizar esta acción.');", true);
+
+                return;
+            }
+
+            try
+            {
+                var baseDatosService = new BaseDatosService();
+
+                baseDatosService.Backup();
+
+                Response.Redirect("~/Dashboard.aspx");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al realizar el backup de la base de datos: {ex.Message}");
+
+                // Mostrar mensaje de error al usuario
+                ClientScript.RegisterStartupScript(this.GetType(), "error",
+                    "alert('Ocurrió un error al intentar realizar el backup de la base de datos. Intente nuevamente.');", true);
+            }
+        }
+
+        protected void btnCalculateVD_Click(object sender, EventArgs e)
+        {
+            bool esWebMaster = usuarioActual.Familias.Any(f => f.Nombre == "WebMaster");
+
+            if (!esWebMaster)
+            {
+                ClientScript.RegisterStartupScript(this.GetType(), "error",
+                    "alert('Usted no posee los permisos necesarios para realizar esta acción.');", true);
+
+                return;
+            }
+
+            try
+            {
+                var digitVerifierManager = new DigitVerifierManager();
+                digitVerifierManager.RecalcularDV();
+
+                Response.Redirect("~/Dashboard.aspx");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al ejecutar el cálculo del nuevo dígito verificador de la base de datos: {ex.Message}");
+
+                // Mostrar mensaje de error al usuario
+                ClientScript.RegisterStartupScript(this.GetType(), "error",
+                    "alert('Ocurrió un error al intentar calcular el nuevo dígito verificador de la base de datos. Intente nuevamente.');", true);
+            }
+        }
+
+        protected void btnRestoreDB_Click(object sender, EventArgs e)
+        {
+            bool esWebMaster = usuarioActual.Familias.Any(f => f.Nombre == "WebMaster");
+
+            if (!esWebMaster)
+            {
+                ClientScript.RegisterStartupScript(this.GetType(), "error",
+                    "alert('Usted no posee los permisos necesarios para realizar esta acción.');", true);
+
+                return;
+            }
+
+            try
+            {
+                var baseDatosService = new BaseDatosService();
+
+                baseDatosService.Restore();
+
+                Response.Redirect("~/Dashboard.aspx");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al realizar el restore de la base de datos: {ex.Message}");
+
+                // Mostrar mensaje de error al usuario
+                ClientScript.RegisterStartupScript(this.GetType(), "error",
+                    "alert('Ocurrió un error al intentar restaurar el backup de la base de datos. Intente nuevamente.');", true);
+            }
         }
 
         #endregion

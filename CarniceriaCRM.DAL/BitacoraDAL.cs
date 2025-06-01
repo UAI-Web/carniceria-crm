@@ -108,7 +108,7 @@ namespace CarniceriaCRM.DAL
             {
                 Descripcion = $"Login exitoso - Usuario: {usuario.Nombre} {usuario.Apellido}",
                 Accion = "LOGIN_EXITOSO",
-                IdUsuario = int.Parse(usuario.Id),
+                IdUsuario = usuario.Id,
                 FechaHora = DateTime.Now,
                 DireccionIP = direccionIP,
                 UserAgent = userAgent
@@ -122,7 +122,7 @@ namespace CarniceriaCRM.DAL
             {
                 Descripcion = $"Logout - Usuario: {usuario.Nombre} {usuario.Apellido}",
                 Accion = "LOGOUT",
-                IdUsuario = int.Parse(usuario.Id),
+                IdUsuario = usuario.Id,
                 FechaHora = DateTime.Now,
                 DireccionIP = direccionIP,
                 UserAgent = userAgent
@@ -150,7 +150,7 @@ namespace CarniceriaCRM.DAL
             {
                 Descripcion = $"Usuario bloqueado - Usuario: {usuario.Nombre} {usuario.Apellido}",
                 Accion = "USUARIO_BLOQUEADO",
-                IdUsuario = int.Parse(usuario.Id),
+                IdUsuario = usuario.Id,
                 FechaHora = DateTime.Now,
                 DireccionIP = direccionIP,
                 UserAgent = userAgent
@@ -190,7 +190,7 @@ namespace CarniceriaCRM.DAL
             {
                 bitacora.Usuario = new Usuario
                 {
-                    Id = reader["UsuarioId"].ToString(),
+                    Id = reader.GetInt32(reader.GetOrdinal("UsuarioId")),
                     Nombre = reader["Nombre"].ToString(),
                     Apellido = reader["Apellido"].ToString(),
                     Mail = reader["Mail"].ToString()

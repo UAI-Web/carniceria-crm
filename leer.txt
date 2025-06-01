@@ -1,0 +1,6 @@
+
+en este directorio o en donde se realice el backup se requiere dar permisos al usuario:
+NT Service\MSSQLSERVER
+
+control total? dale que va
+

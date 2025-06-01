@@ -88,7 +88,7 @@ Inherits="CarniceriaCRM.Dashboard" %>
               ID="pnlProductos"
               runat="server"
               CssClass="module-card"
-              Visible="true"
+              Visible="false"
             >
               <i class="fas fa-box module-icon"></i>
               <h3>Productos</h3>
@@ -126,7 +126,7 @@ Inherits="CarniceriaCRM.Dashboard" %>
               ID="pnlPedidos"
               runat="server"
               CssClass="module-card"
-              Visible="true"
+              Visible="false"
             >
               <i class="fas fa-shopping-cart module-icon"></i>
               <h3>Pedidos</h3>
@@ -234,6 +234,64 @@ Inherits="CarniceriaCRM.Dashboard" %>
                 OnClick="btnConfiguracion_Click"
               />
             </asp:Panel>
+
+            <!-- Módulo Backup (Solo WebMaster) -->
+            <asp:Panel
+              ID="panBackup"
+              runat="server"
+              CssClass="module-card"
+              Visible="false"
+            >
+              <i class="fas fa-database module-icon"></i>
+              <h3>Copia de respaldo</h3>
+              <p>Realizar un backup de Base de Datos</p>
+              <asp:Button
+                ID="btnBackup"
+                runat="server"
+                Text="Ejecutar"
+                CssClass="btn-module"
+                OnClick="btnBackupDB_Click"
+              />
+            </asp:Panel>
+
+            <!-- Módulo Dígito verificador (Solo WebMaster) -->
+            <asp:Panel
+              ID="panCalculateVD"
+              runat="server"
+              CssClass="module-card"
+              Visible="false"
+            >
+              <i class="fas fa-hashtag module-icon"></i>
+              <h3>Dígito verificador</h3>
+              <p>Revalidar el dígito verificador</p>
+              <asp:Button
+                ID="btnCalculateVD"
+                runat="server"
+                Text="Ejecutar"
+                CssClass="btn-module"
+                OnClick="btnCalculateVD_Click"
+              />
+            </asp:Panel>
+
+            <!-- Módulo Restore (Solo WebMaster) -->
+            <asp:Panel
+              ID="panRestore"
+              runat="server"
+              CssClass="module-card"
+              Visible="false"
+            >
+              <i class="fas fa-database module-icon"></i>
+              <h3>Restaurar respaldo</h3>
+              <p>Restauración de Base de Datos</p>
+              <asp:Button
+                ID="btnRestore"
+                runat="server"
+                Text="Ejecutar"
+                CssClass="btn-module"
+                OnClick="btnRestoreDB_Click"
+              />
+            </asp:Panel>
+
           </div>
         </section>
 
@@ -320,6 +378,41 @@ Inherits="CarniceriaCRM.Dashboard" %>
             </p>
           </div>
         </asp:Panel>
+
+        <asp:PlaceHolder runat="server" ID="phDVErrors" Visible="false">
+            <!-- Modal para detalles -->
+            <div id="modalDVErrors" class="modal" style="display: block;">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3><i class="fas fa-circle-exclamation errorColor"></i> Se encontraron inconsistencias en los datos</h3>
+                  <span class="modal-close" onclick="cerrarModal('modalDVErrors')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <asp:PlaceHolder runat="server" ID="phDVHErrors" Visible="false">
+                        <label>Errores de fila:</label><br />
+                        <asp:BulletedList runat="server" ID="blDVHError"></asp:BulletedList><br />
+                        <br />
+                    </asp:PlaceHolder>
+                    <asp:PlaceHolder runat="server" ID="phDVVErrors" Visible="false">
+                        <label>Errores de tablas:</label><br />
+                        <asp:BulletedList runat="server" ID="blDVVError"></asp:BulletedList><br />
+                        <br />
+                    </asp:PlaceHolder>
+                </div>
+                <div class="modal-footer">
+                  <button
+                    type="button"
+                    class="btn-modal-close"
+                    onclick="cerrarModal('modalDVErrors')"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+        </asp:PlaceHolder>
+
       </main>
     </form>
 
@@ -339,6 +432,11 @@ Inherits="CarniceriaCRM.Dashboard" %>
           }, index * 100);
         });
       });
+
+        function cerrarModal(nombreModal) {
+            var modal = document.getElementById(nombreModal);
+            modal.style.display = 'none';
+        }
     </script>
   </body>
 </html>
