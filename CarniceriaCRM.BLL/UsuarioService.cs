@@ -1,4 +1,5 @@
 ﻿using CarniceriaCRM.BE;
+using CarniceriaCRM.BLL.DigitVerifier;
 using CarniceriaCRM.DAL;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Web;
 
 namespace CarniceriaCRM.BLL
 {
-    public class UsuarioService
+    public class UsuarioService : DigitVerifierService
     {
         private readonly UsuarioDAL _usuarioDAL;
         private readonly BitacoraDAL _bitacoraDAL;
@@ -35,32 +36,37 @@ namespace CarniceriaCRM.BLL
 
             Usuario usu = _usuarioDAL.ObtenerPorMail(mail); //Agarro de la BD el usuario que corresponde al mail
             
-            if(usu == null)
+            if (usu == null)
             {
                 RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Mail inválido", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.MailInvalido); //No existe el usuario con ese mail
             }
             
-            if(usu.Bloqueado == true)
+            if (usu.Bloqueado == true)
             {
                 RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Usuario bloqueado", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.UsuarioBloqueado); //Si esta bloqueado no avanza
             }
             
-            if(!Encriptador.Encriptar(password).Equals(usu.Clave)) //Hasheo la clave ingresada y la comparo con la de la BD
+            if (!Encriptador.Encriptar(password).Equals(usu.Clave)) //Hasheo la clave ingresada y la comparo con la de la BD
             {
-                if(usu.IntentosFallidos == 2) //Al tercer intento fallido le bloqueo la cuenta
+                if (usu.IntentosFallidos == 2) //Al tercer intento fallido le bloqueo la cuenta
                 {
                     usu.Bloqueado = true;
                     _usuarioDAL.Modificar(usu); 
                     _usuarioDAL.ResetearIntentos(usu);
+
+                    RecalcularSingleDV(usu.Id);
+
                     RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarBloqueoUsuario(usu, direccionIP, userAgent));
                 }
                 else
                 {
                     _usuarioDAL.IncrementarIntento(usu);
+
+                    RecalcularSingleDV(usu.Id);
                 }
-                
+
                 RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarLoginFallido(mail, "Contraseña inválida", direccionIP, userAgent));
                 throw new ExcepcionLogin(ResultadoLogin.ContraseñaInvalida);
             }
@@ -70,8 +76,10 @@ namespace CarniceriaCRM.BLL
                 if (usu.IntentosFallidos > 0)
                 {
                     _usuarioDAL.ResetearIntentos(usu);
+
+                    RecalcularSingleDV(usu.Id);
                 }
-                
+
                 SesionSingleton.Instancia.Login(usu); //Si todo sale bien hace login
                 
                 // Registrar login exitoso en bitácora
@@ -159,6 +167,7 @@ namespace CarniceriaCRM.BLL
         public void CambiarPassword(int usuarioId, string passwordActual, string passwordNuevo)
         {
             Usuario usuario = _usuarioDAL.ObtenerPorId(usuarioId);
+
             if (usuario == null)
             {
                 throw new Exception("Usuario no encontrado");
@@ -177,6 +186,7 @@ namespace CarniceriaCRM.BLL
             // Registrar el cambio en bitácora
             string direccionIP = ObtenerDireccionIP();
             string userAgent = ObtenerUserAgent();
+
             RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarEvento(usuarioId, "CAMBIO_PASSWORD", 
                 $"Usuario {usuario.Nombre} {usuario.Apellido} cambió su contraseña", 
                 direccionIP, userAgent));
@@ -188,6 +198,7 @@ namespace CarniceriaCRM.BLL
         public void DesbloquearUsuario(int usuarioId)
         {
             Usuario usuario = _usuarioDAL.ObtenerPorId(usuarioId);
+
             if (usuario != null)
             {
                 usuario.Bloqueado = false;
@@ -197,6 +208,7 @@ namespace CarniceriaCRM.BLL
                 // Registrar en bitácora
                 string direccionIP = ObtenerDireccionIP();
                 string userAgent = ObtenerUserAgent();
+
                 RegistrarBitacoraSafe(() => _bitacoraDAL.RegistrarEvento(usuarioId, "USUARIO_DESBLOQUEADO", 
                     $"Usuario {usuario.Nombre} {usuario.Apellido} fue desbloqueado manualmente", 
                     direccionIP, userAgent));
@@ -277,6 +289,79 @@ namespace CarniceriaCRM.BLL
                     // Si no se puede escribir al EventLog, ignorar
                 }
             }
+        }
+
+        public override IntegrityResult VerifyIntegrity()
+        {
+            IntegrityResult result = new IntegrityResult();
+
+            IDigitVerifier<Usuario> verifier = new DigitVerifier<Usuario>();
+
+            var todos = _usuarioDAL.ObtenerTodos();
+
+            // Verificar DVH fila por fila
+            foreach (var item in todos)
+            {
+                string expectedDVH = verifier.ComputeDVH(item);
+
+                if (item.DigitoVerificadorH != expectedDVH)
+                {
+                    result.DHErrors.Add(new IntegrityError($"DVH corrupto en {UsuarioDAL.TableName} [{item.Id}]: se esperaba '{expectedDVH}', se encontró {((!string.IsNullOrEmpty(item.DigitoVerificadorH)) ? "'" + item.DigitoVerificadorH + "'" : "vacío")}."));
+                    result.Result = false;
+                }
+            }
+
+            // Verificar DVV global
+            DigitoVerificadorVDAL dvvDAL = new DigitoVerificadorVDAL();
+            string storedDVV = dvvDAL.ObtenerDVV(UsuarioDAL.TableName);
+            string expectedDVV = verifier.ComputeDVV(todos);
+
+            if (storedDVV != expectedDVV)
+            {
+                result.DVErrors.Add(new IntegrityError($"DVV corrupto en {UsuarioDAL.TableName}: se esperaba '{expectedDVV}', se encontró {((!string.IsNullOrEmpty(storedDVV)) ? "'" + storedDVV + "'" : "vacío")}."));
+                result.Result = false;
+            }
+
+            return result;
+        }
+
+        public override void RecalcularDV()
+        {
+            IDigitVerifier<Usuario> verifier = new DigitVerifier<Usuario>();
+
+            var todos = _usuarioDAL.ObtenerTodos();
+
+            foreach (var item in todos)
+            {
+                string dvH = verifier.ComputeDVH(item);
+
+                if (item.DigitoVerificadorH != dvH)
+                    _usuarioDAL.ActualizarDVH(item.Id, dvH);
+            }
+
+            string dvV = verifier.ComputeDVV(todos);
+
+            DigitoVerificadorVDAL dvvDAL = new DigitoVerificadorVDAL();
+            dvvDAL.ActualizarDVV(UsuarioDAL.TableName, dvV);
+        }
+
+        public override void RecalcularSingleDV(int id)
+        {
+            IDigitVerifier<Usuario> verifier = new DigitVerifier<Usuario>();
+
+            Usuario item = _usuarioDAL.ObtenerPorId(id);
+
+            string dvH = verifier.ComputeDVH(item);
+
+            if (item.DigitoVerificadorH != dvH)
+                _usuarioDAL.ActualizarDVH(item.Id, dvH);
+
+            var todos = _usuarioDAL.ObtenerTodos();
+
+            string dvV = verifier.ComputeDVV(todos);
+
+            DigitoVerificadorVDAL dvvDAL = new DigitoVerificadorVDAL();
+            dvvDAL.ActualizarDVV(UsuarioDAL.TableName, dvV);
         }
     }
 }

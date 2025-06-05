@@ -11,6 +11,7 @@ namespace CarniceriaCRM.DAL
     public class UsuarioDAL
     {
         private readonly string _connectionString;
+        public static readonly string TableName = "Usuarios";
 
         public UsuarioDAL()
         {
@@ -29,7 +30,7 @@ namespace CarniceriaCRM.DAL
             {
                 string query = @"
                     SELECT Id, Nombre, Apellido, Mail, Clave, IntentosFallidos, Bloqueado, 
-                           FechaCreacion, FechaUltimaModificacion, Activo
+                           FechaCreacion, FechaUltimaModificacion, Activo, DigitoVerificadorH
                     FROM Usuarios 
                     WHERE Activo = 1
                     ORDER BY Nombre, Apellido";
@@ -61,7 +62,7 @@ namespace CarniceriaCRM.DAL
             {
                 string query = @"
                     SELECT Id, Nombre, Apellido, Mail, Clave, IntentosFallidos, Bloqueado, 
-                           FechaCreacion, FechaUltimaModificacion, Activo
+                           FechaCreacion, FechaUltimaModificacion, Activo, DigitoVerificadorH
                     FROM Usuarios 
                     WHERE Mail = @Mail AND Activo = 1";
 
@@ -100,7 +101,7 @@ namespace CarniceriaCRM.DAL
             {
                 string query = @"
                     SELECT Id, Nombre, Apellido, Mail, Clave, IntentosFallidos, Bloqueado, 
-                           FechaCreacion, FechaUltimaModificacion, Activo
+                           FechaCreacion, FechaUltimaModificacion, Activo, DigitoVerificadorH
                     FROM Usuarios 
                     WHERE Id = @Id";
 
@@ -109,6 +110,7 @@ namespace CarniceriaCRM.DAL
                     command.Parameters.AddWithValue("@Id", id);
                     
                     connection.Open();
+
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -124,6 +126,7 @@ namespace CarniceriaCRM.DAL
 
         /// <summary>
         /// Inserta un nuevo usuario
+        /// HAY QUE VER QUE PASA CON EL DIGITO VERIFICADOR
         /// </summary>
         public void Insertar(Usuario usuario)
         {
@@ -139,10 +142,12 @@ namespace CarniceriaCRM.DAL
                     AgregarParametrosUsuario(command, usuario);
                     
                     connection.Open();
+
                     object result = command.ExecuteScalar();
+
                     if (result != null)
                     {
-                        usuario.Id = Convert.ToInt32(result).ToString();
+                        usuario.Id = Convert.ToInt32(result);
                     }
                 }
             }
@@ -150,6 +155,7 @@ namespace CarniceriaCRM.DAL
 
         /// <summary>
         /// Modifica un usuario existente
+        /// HAY QUE VER ESTE CASO PUNTUAL POR EL DIGITO VERIFICADOR
         /// </summary>
         public void Modificar(Usuario usuario)
         {
@@ -180,6 +186,7 @@ namespace CarniceriaCRM.DAL
 
         /// <summary>
         /// Elimina (desactiva) un usuario
+        /// HAY QUE VER ESTE CASO PUNTUAL POR EL CAMBIO EN EL DIGITO VERIFICADOR H
         /// </summary>
         public void Borrar(Usuario usuario)
         {
@@ -202,6 +209,7 @@ namespace CarniceriaCRM.DAL
 
         /// <summary>
         /// Incrementa el contador de intentos fallidos
+        /// HAY QUE VER QUE PASA CON EL DIGITO VERIFICADOR
         /// </summary>
         public void IncrementarIntento(Usuario usuario)
         {
@@ -225,6 +233,7 @@ namespace CarniceriaCRM.DAL
 
         /// <summary>
         /// Resetea el contador de intentos fallidos
+        /// HAY QUE VER QUE PASA CON EL DIGITO VERIFICADOR
         /// </summary>
         public void ResetearIntentos(Usuario usuario)
         {
@@ -250,13 +259,14 @@ namespace CarniceriaCRM.DAL
         {
             return new Usuario
             {
-                Id = reader["Id"].ToString(),
+                Id = reader.GetInt32(reader.GetOrdinal("Id")),
                 Nombre = reader["Nombre"].ToString(),
                 Apellido = reader["Apellido"].ToString(),
                 Mail = reader["Mail"].ToString(),
                 Clave = reader["Clave"].ToString(),
                 IntentosFallidos = Convert.ToInt32(reader["IntentosFallidos"]),
-                Bloqueado = Convert.ToBoolean(reader["Bloqueado"])
+                Bloqueado = Convert.ToBoolean(reader["Bloqueado"]),
+                DigitoVerificadorH = reader["DigitoVerificadorH"].ToString()
             };
         }
 
@@ -363,6 +373,26 @@ namespace CarniceriaCRM.DAL
                         // Asignar familias al usuario
                         usuario.Familias = familiasDict.Values.ToList();
                     }
+                }
+            }
+        }
+
+        public void ActualizarDVH(int id, string digitoVerificador)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                string query = $@"
+                    UPDATE {TableName}
+                    SET DigitoVerificadorH = @DigitoVerificadorH
+                    WHERE Id = @Id";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@DigitoVerificadorH", digitoVerificador);
+
+                    connection.Open();
+                    command.ExecuteNonQuery();
                 }
             }
         }

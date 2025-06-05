@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace CarniceriaCRM.BE
 {
-    public class Usuario
+    public class Usuario : DigitVerifierBase
     {
-        public string Id { get; set; }
+        public int Id { get; set; }
 
 		private string nombre;
 
