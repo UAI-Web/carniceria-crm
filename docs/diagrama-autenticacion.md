@@ -40,6 +40,117 @@ sequenceDiagram
     SS->>L: Redireccionar a Login
 ```
 
+## 🏗️ Diagrama de Autenticación por Capas Arquitectónicas
+
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant GUI as GUI Layer
+    participant BE as BE Layer
+    participant BLL as BLL Layer
+    participant DAL as DAL Layer
+
+    Note over GUI: Login.aspx / Login.aspx.cs
+    Note over BE: SesionSingleton.cs, Usuario.cs, ResultadoLogin.cs
+    Note over BLL: UsuarioService.cs, BitacoraService.cs, Encriptador.cs
+    Note over DAL: UsuarioDAL.cs, BitacoraDAL.cs
+
+    U->>GUI: Accede al sistema
+    GUI->>BE: SesionSingleton.Instancia
+    alt Sesión activa
+        BE-->>GUI: Usuario != null
+        GUI->>GUI: Response.Redirect("Dashboard.aspx")
+    else Sin sesión
+        BE-->>GUI: Usuario == null
+        GUI->>GUI: Mostrar formulario login
+        U->>GUI: Ingresa credenciales (btnEntrar_Click)
+        GUI->>BLL: UsuarioService.Login(mail, pass)
+        BLL->>DAL: UsuarioDAL.ObtenerPorMail(mail)
+
+        alt Usuario no existe
+            DAL-->>BLL: return null
+            BLL->>DAL: BitacoraDAL.RegistrarLoginFallido()
+            BLL-->>GUI: ExcepcionLogin(MailInvalido)
+            GUI->>U: Mostrar error mail inválido
+        else Usuario bloqueado
+            DAL-->>BLL: Usuario.Bloqueado == true
+            BLL->>DAL: BitacoraDAL.RegistrarLoginFallido()
+            BLL-->>GUI: ExcepcionLogin(UsuarioBloqueado)
+            GUI->>U: Mostrar error usuario bloqueado
+        else Contraseña incorrecta
+            DAL-->>BLL: return Usuario
+            BLL->>BLL: Encriptador.Encriptar(password)
+            BLL->>BLL: Comparar con Usuario.Clave
+            alt Máximo intentos alcanzado
+                BLL->>DAL: UsuarioDAL.Modificar(Usuario.Bloqueado = true)
+                BLL->>DAL: BitacoraDAL.RegistrarBloqueoUsuario()
+            else Incrementar intentos
+                BLL->>DAL: UsuarioDAL.IncrementarIntento()
+            end
+            BLL->>DAL: BitacoraDAL.RegistrarLoginFallido()
+            BLL-->>GUI: ExcepcionLogin(ContraseñaInvalida)
+            GUI->>U: Mostrar error contraseña inválida
+        else Login exitoso
+            DAL-->>BLL: return Usuario válido
+            BLL->>BLL: Encriptador.Encriptar(password) == Usuario.Clave
+            BLL->>DAL: UsuarioDAL.ResetearIntentos()
+            BLL->>DAL: UsuarioDAL.CargarFamiliasYPermisos()
+            BLL->>BE: SesionSingleton.Instancia.Login(Usuario)
+            BLL->>DAL: BitacoraDAL.RegistrarLogin()
+            BLL-->>GUI: ResultadoLogin.UsuarioValido
+            GUI->>GUI: Response.Redirect("Dashboard.aspx")
+        end
+    end
+
+    Note over GUI, DAL: Logout Process
+    U->>GUI: Cerrar sesión
+    GUI->>BLL: UsuarioService.Logout()
+    BLL->>BE: SesionSingleton.Instancia.Usuario
+    BLL->>DAL: BitacoraDAL.RegistrarLogout()
+    BLL->>BE: SesionSingleton.Instancia.Logout()
+    BLL-->>GUI: Logout exitoso
+    GUI->>GUI: Response.Redirect("Login.aspx")
+```
+
+### 📋 Archivos por Capa
+
+#### GUI Layer (Interfaz de Usuario)
+
+- **Login.aspx**: Formulario web de autenticación
+- **Login.aspx.cs**: Código behind del formulario
+- **Dashboard.aspx**: Interfaz principal del sistema
+- **Dashboard.aspx.cs**: Código behind del dashboard
+
+#### BE Layer (Business Entities)
+
+- **Usuario.cs**: Entidad que representa un usuario del sistema
+- **SesionSingleton.cs**: Patrón Singleton para gestión de sesión
+- **Sesion.cs**: Clase base para manejo de sesión
+- **ResultadoLogin.cs**: Enumeración de resultados de autenticación
+- **ExcepcionLogin.cs**: Excepción personalizada para errores de login
+
+#### BLL Layer (Business Logic Layer)
+
+- **UsuarioService.cs**: Servicio que contiene toda la lógica de negocio de usuarios
+- **BitacoraService.cs**: Servicio para registro de auditoría
+- **Encriptador.cs**: Utilidad para encriptación de contraseñas
+
+#### DAL Layer (Data Access Layer)
+
+- **UsuarioDAL.cs**: Acceso a datos de usuarios en base de datos
+- **BitacoraDAL.cs**: Acceso a datos de bitácora/auditoría
+
+### 🔄 Flujo de Métodos Principales
+
+1. **Verificación de Sesión**: `SesionSingleton.Instancia.EstaLogueado()`
+2. **Validación de Credenciales**: `UsuarioService.Login(mail, password)`
+3. **Consulta de Usuario**: `UsuarioDAL.ObtenerPorMail(mail)`
+4. **Encriptación**: `Encriptador.Encriptar(password)`
+5. **Gestión de Intentos**: `UsuarioDAL.IncrementarIntento()` / `UsuarioDAL.ResetearIntentos()`
+6. **Creación de Sesión**: `SesionSingleton.Instancia.Login(Usuario)`
+7. **Registro de Auditoría**: `BitacoraDAL.RegistrarLogin()` / `BitacoraDAL.RegistrarLoginFallido()`
+8. **Cierre de Sesión**: `UsuarioService.Logout()` -> `SesionSingleton.Instancia.Logout()`
+
 ## 🔍 Descripción Resumida
 
 - **Validación de Login**: Agrupa la verificación de credenciales, control de intentos y bloqueo.
